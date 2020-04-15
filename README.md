@@ -24,6 +24,18 @@ This repository is a project folder for your Eclipse project space. Once you hav
 
 GWT will build it's output in to the "war" directory. In the "war" directory the file "iframe.html" is loaded as an iFrame in to the spare space at the bottom of the right hand pannel. It can be used for branding etc.
 
+### Building on GNU/Linux (04/2020)
+Tested on :
+* Linux Mint 19.3
+* Eclipse 2020-03 (4.15.0)
+* GWT Eclipse plugin 3.0.0
+
+The build stop on error : Check that your module inherits 'com.google.gwt.core.Core' either directly or indirectly (most often by inheriting module 'com.google.gwt.user.User')
+
+You have to install java-8-openJDK (no need to remove java-11-openJDK), and set this version in the build options :
+* Installed JRE : check "java-8-openJDK"
+* Execution Environments : J2SE-1.5 with java-8-openJDK
+
 ## Deployment of the web application
 
 * "GWT Compile Project..." as explained above. This will put the outputs in to the "war" directory in the Eclipse project folder. You then need to copy everything in the "war" directory, except the "WEB-INF" directory, on to your web server.
