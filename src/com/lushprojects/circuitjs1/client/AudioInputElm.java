@@ -48,10 +48,9 @@ class AudioInputElm extends RailElm {
     	static int fileNumCounter = 1;
     	static HashMap<Integer, AudioFileEntry> audioFileMap = new HashMap<Integer, AudioFileEntry>();
     	
-    	// context SR depends of the hardware/navigator
-    	// need to be loaded only once
-    	// all audio inputs will be resampled by the navigator to this sampling rate
-    	// (file sampling rate as no effect)
+    	// The context sampling depends of the hardware/navigator, so it needs to be loaded only once
+    	// https://github.com/WebAudio/web-audio-api/issues/300
+    	// All audio inputs will be resampled by the navigator to this sampling rate (the file sampling rate is ignored)
     	static native void getContextSamplingRate(AudioInputElm elm) /*-{
     	    var context = new (window.AudioContext || window.webkitAudioContext)();
        	    elm.@com.lushprojects.circuitjs1.client.AudioInputElm::setContextSamplingRate(I)(context.sampleRate);
