@@ -24,8 +24,6 @@ import java.util.HashMap;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ChangeEvent;
 import com.google.gwt.event.dom.client.ChangeHandler;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.TextArea;
 
@@ -78,6 +76,8 @@ class AudioInputElm extends RailElm {
 	    maxVoltage = Double.parseDouble(st.nextToken());
 	    startPosition = Double.parseDouble(st.nextToken());
 	    fileNum = Integer.parseInt(st.nextToken());
+	    samplingRate = Integer.parseInt(st.nextToken());
+	    
 	    if (contextSamplingRate==0)
 		getContextSamplingRate(this);
 
@@ -85,8 +85,7 @@ class AudioInputElm extends RailElm {
 	    if (ent != null) {
 		fileName = ent.fileName;
 		data = ent.data;
-	    }
-	    samplingRate = contextSamplingRate;
+	    }	     
 	}
 	
 	double fmphase;
@@ -102,7 +101,7 @@ class AudioInputElm extends RailElm {
 		ent.data = data;
 		audioFileMap.put(fileNum, ent);
 	    }
-	    return super.dump() + " " + maxVoltage + " " + startPosition + " " + fileNum;
+	    return super.dump() + " " + maxVoltage + " " + startPosition + " " + fileNum + " " + samplingRate;
 	}
 	
 	void reset() {
