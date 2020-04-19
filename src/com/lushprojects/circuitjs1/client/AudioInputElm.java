@@ -27,6 +27,7 @@ import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.ui.FileUpload;
+import com.google.gwt.user.client.ui.TextArea;
 
 class AudioFileEntry {
     String fileName;
@@ -42,15 +43,32 @@ class AudioInputElm extends RailElm {
     	double maxVoltage;
     	double startPosition;
     	
-    	static int lastSamplingRate;
+    	//static int lastSamplingRate;
+    	static int contextSamplingRate = 0;
     	
     	// cache to preserve audio data when doing cut/paste, or undo/redo
     	static int fileNumCounter = 1;
     	static HashMap<Integer, AudioFileEntry> audioFileMap = new HashMap<Integer, AudioFileEntry>();
     	
+    	// context SR depends of the hardware/navigator
+    	// need to be loaded only once
+    	// all audio inputs will be resampled by the navigator to this sampling rate
+    	// (file sampling rate as no effect)
+    	static native void getContextSamplingRate(AudioInputElm elm) /*-{
+    	    var context = new (window.AudioContext || window.webkitAudioContext)();
+       	    elm.@com.lushprojects.circuitjs1.client.AudioInputElm::setContextSamplingRate(I)(context.sampleRate);
+    	}-*/;
+    	
+    	void setContextSamplingRate(int sr) {
+	    contextSamplingRate = sr;
+	}
+    	
 	public AudioInputElm(int xx, int yy) {
 	    super(xx, yy, WF_AC);
 	    maxVoltage = 5;
+	    if (contextSamplingRate==0)
+		getContextSamplingRate(this);
+	    samplingRate = contextSamplingRate;
 	}
 	
 	public AudioInputElm(int xa, int ya, int xb, int yb, int f,
@@ -60,13 +78,15 @@ class AudioInputElm extends RailElm {
 	    maxVoltage = Double.parseDouble(st.nextToken());
 	    startPosition = Double.parseDouble(st.nextToken());
 	    fileNum = Integer.parseInt(st.nextToken());
+	    if (contextSamplingRate==0)
+		getContextSamplingRate(this);
 
 	    AudioFileEntry ent = audioFileMap.get(fileNum);
 	    if (ent != null) {
 		fileName = ent.fileName;
 		data = ent.data;
 	    }
-	    samplingRate = lastSamplingRate;
+	    samplingRate = contextSamplingRate;
 	}
 	
 	double fmphase;
@@ -139,6 +159,15 @@ class AudioInputElm extends RailElm {
                 return new EditInfo("Max Voltage", maxVoltage);
             if (n == 2)
                 return new EditInfo("Start Position (s)", startPosition);
+            if(n==3) {
+        	EditInfo ei = new EditInfo("Default Sampling Rate", 0);
+        	ei.textArea = new TextArea();
+        	ei.textArea.setText("Your navigator resample audio input at "+getUnitText(contextSamplingRate, "Hz"));
+        	ei.textArea.setReadOnly(true);
+        	return ei;
+            }	    
+	    if(n==4)
+		return new EditInfo("Play Sampling Rate (Hz)", samplingRate);
 	    return null;
 	}
 	
@@ -147,31 +176,32 @@ class AudioInputElm extends RailElm {
 		maxVoltage = ei.value;
 	    if (n == 2)
 		startPosition = ei.value;
+	    if (n == 4)
+		samplingRate = (int) ei.value;
 	}
 	
 	// fetch audio data for a selected file
 	static native String fetchLoadFileData(AudioInputElm elm, Element uploadElement) /*-{
 	    var oFiles = uploadElement.files;
        	    var context = new (window.AudioContext || window.webkitAudioContext)();
-       	    elm.@com.lushprojects.circuitjs1.client.AudioInputElm::setSamplingRate(I)(context.sampleRate);
+       	    //elm.@com.lushprojects.circuitjs1.client.AudioInputElm::setSamplingRate(I)(context.sampleRate);
 	    if (oFiles.length >= 1) {
-                        var reader = new FileReader();
-                        reader.onload = function(e) {
-                		context.decodeAudioData(reader.result, function(buffer) {
-                    			var data = buffer.getChannelData(0); 
-                    			elm.@com.lushprojects.circuitjs1.client.AudioInputElm::gotAudioData(*)(data);
-                		},
-                		function(e){ console.log("Error with decoding audio data" + e.err); });
-                        };
-
-                        reader.readAsArrayBuffer(oFiles[0]);
+            	var reader = new FileReader();
+                reader.onload = function(e) {
+                	context.decodeAudioData(reader.result, function(buffer) {
+                    		var data = buffer.getChannelData(0); 
+                    		elm.@com.lushprojects.circuitjs1.client.AudioInputElm::gotAudioData(*)(data);
+                	},
+                	function(e){ console.log("Error with decoding audio data" + e.err); });
+               	};
+                reader.readAsArrayBuffer(oFiles[0]);
 	    }
 	}-*/;
 	
 	void gotAudioData(JsArrayNumber d) {
 	    data = d;
-	    lastSamplingRate = samplingRate;
-	    AudioOutputElm.lastSamplingRate = samplingRate;
+	    //lastSamplingRate = samplingRate;
+	    //AudioOutputElm.lastSamplingRate = samplingRate;
 	}
 
 	void getInfo(String arr[]) {
@@ -184,6 +214,7 @@ class AudioInputElm extends RailElm {
 	    arr[2] = "pos = " + getUnitText(timeOffset, "s");
 	    double dur = data.length() / (double)samplingRate;
 	    arr[3] = "dur = " + getUnitText(dur, "s");
+	    arr[4] = "play.f = " + getUnitText(samplingRate, "Hz");
 	}
 	
 	public static void clearCache() {
